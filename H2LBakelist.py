@@ -129,23 +129,39 @@ class OP_H2LB_bakeloop(bpy.types.Operator):
                 mode = 'DISPLACEMENT'
                 
             bpy.context.scene.render.bake_type = mode
+
+            print('baking ',mode,' map ')
             
             ## loop through lo/hi pairs and bake
             for i in bakelist :
                 
+                print('baking chunk : ',i.LOobj)
+                
+                targetobj=bpy.data.objects[i.LOobj]
+                targetimg=bpy.data.images[H2LB[baketype]]
+                                
                 bpy.ops.object.select_pattern(pattern=(i.HIobj+'*'))
                 bpy.ops.object.select_pattern(pattern=i.LOobj)
-                bpy.context.scene.objects.active = bpy.data.objects[i.LOobj]
-                
+                bpy.context.scene.objects.active = targetobj
+
                 if i.LOobj and i.HIobj != '':
 
                 ##assign image
-                
+                ###internal
                     for uv_face in bpy.data.objects[i.LOobj].data.uv_textures.active.data:
-                        uv_face.image = bpy.data.images[H2LB[baketype]]
+                        uv_face.image = targetimg
+
+                    ###Cycles        
+                    node_tree = targetobj.material_slots[0].material.node_tree
+                    node = node_tree.nodes.new(type='ShaderNodeTexImage')
+                    node.name="bake-img"
+                    node.image=targetimg
+                    node.select = True
+                    node_tree.nodes.active = node
+                    node.image = targetimg
                 ### do it !
                 
-                bpy.ops.object.bake_image()           
+                    bpy.ops.object.bake_image()           
 
 
             ##rebake with final padding ??
